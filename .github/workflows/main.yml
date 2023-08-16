@@ -1,7 +1,11 @@
-name: hello-world
+name: main
 on: push
+env:
+  docker_username: ${{ github.actor }}
+  docker_password: ${{ secrets.GITHUB_TOKEN }}
+  GIT_COMMIT: ${{ github.sha }}
 jobs:
-  my-job:
+  Build:
     runs-on: ubuntu-latest
     container: gradle:6-jdk11
     steps:
@@ -15,5 +19,20 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: code
-          path: .
-          
+          path: app/build/libs/app-0.1-all.jar
+
+  Docker-image:
+    runs-on: ubuntu-latest
+    needs: [Build]
+    permissions:
+      packages: write
+    steps:
+    - name: Download code
+      uses: actions/download-artifact@v3
+      with:
+        name: code
+        path: .
+    - name: build docker
+      run: chmod +x ci/build-docker.sh && ci/build-docker.sh
+    - name: push docker
+      run: chmod +x ci/push-docker.sh && ci/push-docker.sh
